@@ -9,39 +9,43 @@
     body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
-      touch-action: manipulation;
+      overflow: auto;
+      touch-action: auto;
     }
-    canvas {
-      display: block;
+    #canvas-wrapper {
       width: 100vw;
       height: 100vh;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: static;
+      touch-action: auto;
     }
   </style>
 </head>
-
 <body>
+  <div id="canvas-wrapper"></div>
   <script>
+    const wrapper = document.getElementById('canvas-wrapper');
     const app = new PIXI.Application({
       width: window.innerWidth,
       height: window.innerHeight,
       backgroundAlpha: 0
     });
-    document.body.appendChild(app.view);
+    wrapper.appendChild(app.view);
 
-
-    // 背景画像
     const background = PIXI.Sprite.from('baby.jpg');
     background.anchor.set(0.5);
     app.stage.addChild(background);
 
-    // ほっぺ用コンテナ（スケール分離）
     const cheekLeftContainer = new PIXI.Container();
     const cheekRightContainer = new PIXI.Container();
     app.stage.addChild(cheekLeftContainer);
     app.stage.addChild(cheekRightContainer);
 
-    // 左ほっぺ
     const cheekLeft = PIXI.Sprite.from('cheek-left.png');
     cheekLeft.anchor.set(0.5);
     cheekLeft.interactive = true;
@@ -49,7 +53,6 @@
     cheekLeft.hitArea = new PIXI.Circle(45, -80, 60);
     cheekLeftContainer.addChild(cheekLeft);
 
-    // 右ほっぺ
     const cheekRight = PIXI.Sprite.from('cheek-right.png');
     cheekRight.anchor.set(0.5);
     cheekRight.interactive = true;
@@ -57,7 +60,6 @@
     cheekRight.hitArea = new PIXI.Circle(250, -70, 30);
     cheekRightContainer.addChild(cheekRight);
 
-    // サイズ調整と配置
     function resizeAll() {
       app.renderer.resize(window.innerWidth, window.innerHeight);
 
@@ -71,16 +73,12 @@
 
       cheekLeftContainer.scale.set(scale);
       cheekRightContainer.scale.set(scale);
-
-      const centerX = app.renderer.width / 2;
-      const centerY = app.renderer.height / 2;
-      cheekLeftContainer.x = centerX;
-      cheekLeftContainer.y = centerY;
-      cheekRightContainer.x = centerX;
-      cheekRightContainer.y = centerY;
+      cheekLeftContainer.x = app.renderer.width / 2;
+      cheekLeftContainer.y = app.renderer.height / 2;
+      cheekRightContainer.x = app.renderer.width / 2;
+      cheekRightContainer.y = app.renderer.height / 2;
     }
 
-    // 揺れアニメーション（スプライト単体に適用）
     function animateCheek(sprite, scaleX, scaleY, duration = 1600) {
       const original = { x: sprite.scale.x, y: sprite.scale.y };
       const start = performance.now();
