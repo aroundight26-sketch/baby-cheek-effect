@@ -3,92 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <title>ほっぺぷるん</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body>
   <script>
     const app = new PIXI.Application({
-      width: 1920,
-      height: 1080,
+      width: window.innerWidth,
+      height: window.innerHeight,
       backgroundAlpha: 0
     });
     document.body.appendChild(app.view);
 
-    // 背景画像（赤ちゃん全体）
+    // 背景画像
     const background = PIXI.Sprite.from('baby.jpg');
+    background.anchor.set(0.5);
     app.stage.addChild(background);
-    background.interactive = false;
 
-    // 左ほっぺスプライト
+    // ほっぺ用コンテナ（スケール分離）
+    const cheekLeftContainer = new PIXI.Container();
+    const cheekRightContainer = new PIXI.Container();
+    app.stage.addChild(cheekLeftContainer);
+    app.stage.addChild(cheekRightContainer);
+
+    // 左ほっぺ
     const cheekLeft = PIXI.Sprite.from('cheek-left.png');
     cheekLeft.anchor.set(0.5);
-    cheekLeft.x = 960;
-    cheekLeft.y = 540;
     cheekLeft.interactive = true;
     cheekLeft.buttonMode = true;
-    cheekLeft.hitArea = new PIXI.Circle(45, -80, 60); 
-    app.stage.addChild(cheekLeft);
+    cheekLeft.hitArea = new PIXI.Circle(45, -80, 60);
+    cheekLeftContainer.addChild(cheekLeft);
 
-    // 右ほっぺスプライト
+    // 右ほっぺ
     const cheekRight = PIXI.Sprite.from('cheek-right.png');
     cheekRight.anchor.set(0.5);
-    cheekRight.x = 960;
-    cheekRight.y = 540;
     cheekRight.interactive = true;
     cheekRight.buttonMode = true;
     cheekRight.hitArea = new PIXI.Circle(250, -70, 30);
-    app.stage.addChild(cheekRight);
+    cheekRightContainer.addChild(cheekRight);
 
-    /* 左ほっぺのヒットエリア確認用
-    const debugLeft = new PIXI.Graphics();
-    debugLeft.beginFill(0xffaaaa, 0.4); // 薄いピンク、40%透明
-    debugLeft.drawCircle(45, -80, 60);
-    debugLeft.endFill();
-    debugLeft.x = cheekLeft.x;
-    debugLeft.y = cheekLeft.y;
-    app.stage.addChild(debugLeft); */
+    // サイズ調整と配置
+    function resizeAll() {
+      app.renderer.resize(window.innerWidth, window.innerHeight);
 
-    /* 右ほっぺのヒットエリア確認用
-    const debugRight = new PIXI.Graphics();
-    debugRight.beginFill(0xaaffff, 0.4); // 薄い水色、40%透明
-    debugRight.drawCircle(250, -70, 30);
-    debugRight.endFill();
-    debugRight.x = cheekRight.x;
-    debugRight.y = cheekRight.y;
-    app.stage.addChild(debugRight);*/
+      const scaleX = app.renderer.width / background.texture.width;
+      const scaleY = app.renderer.height / background.texture.height;
+      const scale = Math.min(scaleX, scaleY);
 
+      background.scale.set(scale);
+      background.x = app.renderer.width / 2;
+      background.y = app.renderer.height / 2;
 
+      cheekLeftContainer.scale.set(scale);
+      cheekRightContainer.scale.set(scale);
 
-    // 揺れアニメーション関数
-function animateCheek(sprite, scaleX, scaleY, duration = 1600) {
-  const original = { x: sprite.scale.x, y: sprite.scale.y };
-  const start = performance.now();
-
-  function tick(now) {
-    const elapsed = now - start;
-    const progress = elapsed / duration;
-
-    // 減衰する揺れ（バネっぽい）
-    const damping = Math.exp(-4 * progress); // 減衰係数
-    const oscillation = Math.sin(progress * Math.PI * 6); // 周期
-
-    const scale = 1 + (scaleX - 1) * damping * oscillation;
-    sprite.scale.set(scale, 2 - scale); // 横に揺れると縦も反対に
-
-    if (progress < 1) {
-      requestAnimationFrame(tick);
-    } else {
-      sprite.scale.set(original.x, original.y);
+      const centerX = app.renderer.width / 2;
+      const centerY = app.renderer.height / 2;
+      cheekLeftContainer.x = centerX;
+      cheekLeftContainer.y = centerY;
+      cheekRightContainer.x = centerX;
+      cheekRightContainer.y = centerY;
     }
-  }
 
-  requestAnimationFrame(tick);
-}
+    // 揺れアニメーション（スプライト単体に適用）
+    function animateCheek(sprite, scaleX, scaleY, duration = 1600) {
+      const original = { x: sprite.scale.x, y: sprite.scale.y };
+      const start = performance.now();
 
+      function tick(now) {
+        const elapsed = now - start;
+        const progress = elapsed / duration;
+        const damping = Math.exp(-4 * progress);
+        const oscillation = Math.sin(progress * Math.PI * 6);
+        const scale = 1 + (scaleX - 1) * damping * oscillation;
+        sprite.scale.set(scale, 2 - scale);
+        if (progress < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          sprite.scale.set(original.x, original.y);
+        }
+      }
 
+      requestAnimationFrame(tick);
+    }
 
-    cheekLeft.on('pointerdown', () => animateCheek(cheekLeft, 1.3, 0.7));
-    cheekRight.on('pointerdown', () => animateCheek(cheekRight, 1.03, 0.5));
+    cheekLeft.on('pointerdown', () => animateCheek(cheekLeft, 1.1, 0.7));
+    cheekRight.on('pointerdown', () => animateCheek(cheekRight, 1.02, 0.9));
+
+    background.texture.baseTexture.once('loaded', resizeAll);
+    window.addEventListener('resize', resizeAll);
   </script>
 </body>
 </html>
