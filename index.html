@@ -8,10 +8,18 @@
   <style>
     body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
+      touch-action: manipulation;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
     }
   </style>
 </head>
+
 <body>
   <script>
     const app = new PIXI.Application({
@@ -20,6 +28,7 @@
       backgroundAlpha: 0
     });
     document.body.appendChild(app.view);
+
 
     // 背景画像
     const background = PIXI.Sprite.from('baby.jpg');
